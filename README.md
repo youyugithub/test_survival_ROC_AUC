@@ -151,3 +151,79 @@ c(TPR,sen,sen_true)
 c(1-FPR,spe,spe_true)
 
 ```
+
+## function for calculating inverse weight
+
+```
+inverse_weight<-function(Ti,delta,time){
+  nind<-length(Ti)
+  survtime<-sort(unique(Ti))
+  hazard<-rep(NA,length(survtime))
+  survival<-rep(NA,length(survtime))
+  hazard_c<-rep(NA,length(survtime))
+  survival_c<-rep(NA,length(survtime))
+  for(ttidx in 1:length(survtime)){
+    tt<-survtime[ttidx]
+    hazard[ttidx]<-sum(Ti==tt&delta)/sum(Ti>=tt)
+    hazard_c[ttidx]<-sum(Ti==tt&!delta)/sum(Ti>=tt)
+    if(ttidx==1){
+      survival[ttidx]<-1-hazard[ttidx]
+      survival_c[ttidx]<-1-hazard_c[ttidx]
+    }else{
+      survival[ttidx]<-survival[ttidx-1]*(1-hazard[ttidx])
+      survival_c[ttidx]<-survival_c[ttidx-1]*(1-hazard_c[ttidx])
+    }
+  }
+  weight<-rep(NA,nind)
+  for(ii in 1:nind){
+    if(Ti[ii]<=time&delta[ii]){
+      ttidx<-sum(survtime<=Ti[ii])
+      weight[ii]<-1/survival_c[ttidx]
+    }else if(Ti[ii]>time){
+      ttidx<-sum(survtime<=time)
+      weight[ii]<-1/survival_c[ttidx]
+    }
+  }
+  return(weight)
+}
+
+
+inverse_weight_allow_na<-function(Ti_,delta_,time_){
+  idx_remove<-is.na(Ti_)|is.na(delta_)
+  Ti<-Ti_[!idx_remove]
+  delta<-delta_[!idx_remove]
+  
+  nind<-length(Ti)
+  survtime<-sort(unique(Ti))
+  hazard<-rep(NA,length(survtime))
+  survival<-rep(NA,length(survtime))
+  hazard_c<-rep(NA,length(survtime))
+  survival_c<-rep(NA,length(survtime))
+  for(ttidx in 1:length(survtime)){
+    tt<-survtime[ttidx]
+    hazard[ttidx]<-sum(Ti==tt&delta)/sum(Ti>=tt)
+    hazard_c[ttidx]<-sum(Ti==tt&!delta)/sum(Ti>=tt)
+    if(ttidx==1){
+      survival[ttidx]<-1-hazard[ttidx]
+      survival_c[ttidx]<-1-hazard_c[ttidx]
+    }else{
+      survival[ttidx]<-survival[ttidx-1]*(1-hazard[ttidx])
+      survival_c[ttidx]<-survival_c[ttidx-1]*(1-hazard_c[ttidx])
+    }
+  }
+  weight_<-rep(NA,length(Ti_))
+  for(ii in 1:length(Ti_)){
+    if(idx_remove[ii]){
+      weight_[ii]<-NA
+    }else if(Ti_[ii]<=time_&delta_[ii]){
+      ttidx<-sum(survtime<=Ti_[ii])
+      weight_[ii]<-1/survival_c[ttidx]
+    }else if(Ti_[ii]>time_){
+      ttidx<-sum(survtime<=time_)
+      weight_[ii]<-1/survival_c[ttidx]
+    }
+  }
+  return(weight_)
+}
+
+```
